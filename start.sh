@@ -1,15 +1,12 @@
 # !/bin/bash
 
 cd src
-gcc DNS_client.c -o DNS_client.o
-gcc DNS_server_local.c -o DNS_server_local.o
+gcc DNS_client.c -o DNS_client
+gcc DNS_server_local.c -o DNS_server_local
 
-
-
-
-mv DNS_client.o ../bin/DNS_client.o
-mv DNS_server_local.c ../bin/DNS_server_local.o
+mv DNS_client ../bin/DNS_client
+mv DNS_server_local ../bin/DNS_server_local
 
 cd ../bin
-./DNS_server_local.o
-./DNS_client.o
+./DNS_server_local 4001
+#./DNS_client sdafadffa sadsadd
