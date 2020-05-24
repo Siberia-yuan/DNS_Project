@@ -5,20 +5,66 @@
 #include<unistd.h>
 #include<string.h>
 
+
 #define SENDPORT 4001
 void error_handling(char *err_string);
 
+struct DNS_RR{
+    unsigned char *name;
+    unsigned short type;
+    unsigned short _class;
+    unsigned int ttl;
+    unsigned short data_len;
+    unsigned char *rdata;
+};
+
+struct DNS_Header{
+    unsigned short id;
+    unsigned short tag;     // 包含QR到Rcode的定义
+    unsigned short queryNum;
+    unsigned short answerNum;
+    unsigned short authorNum;
+    unsigned short addNum;
+};
+
+struct DNS_Query{
+    unsigned char *name;
+    unsigned short qtype;
+    unsigned short qclass;
+};
+
+
 int main(int argc, char *argv[]){
 
-    char send_buff[]="Client send\n";
+    
     char receive_buff[100];
 
-
-    int str_len=0, read_len=0;
     if(argc!=3){
         printf("Usage: %s <query type> <domain name>\n",argv[0]);
         exit(1);
     }
+
+    struct DNS_Header header;
+    struct DNS_Query query;
+    //initialization of header
+    
+    header.id=htons(0x0001);
+    header.tag=htons(0x0000);
+    header.queryNum=htons(0x0001);
+    header.answerNum=htons(0x0000);
+    header.authorNum=htons(0x0000);
+    header.addNum=htons(0x0000);
+    //initialization of query
+    /*
+    query.name=(unsigned char*)argv[2];
+    query.qtype=(unsigned short)argv[1];
+    query.qclass=(unsigned short)"IN";
+    */
+    char send_buff[200];
+    
+    memcpy(send_buff,&header,sizeof(header));
+    //memcpy(send_buff+sizeof(header)-1,&query,sizeof(query));
+    
     int sock;
     struct sockaddr_in dns_local;
     memset(&dns_local,0,sizeof(dns_local));
@@ -34,6 +80,7 @@ int main(int argc, char *argv[]){
     if(connect(sock,(struct sockaddr *)&dns_local,sizeof(dns_local))==-1){
         error_handling("connect() error");
     }
+
     if(write(sock,send_buff,sizeof(send_buff))==-1){
         error_handling("write() error");
     }
