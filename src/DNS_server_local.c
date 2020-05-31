@@ -57,12 +57,15 @@ int main(int argc,char *argv[]){
         error_handling("read() error");
 
     struct DNS_Header *queryHeader;
-    struct DNS_Query *dnsquery;
+    unsigned char *dnsquery;
+    struct QUESTION *que;
     queryHeader=(struct DNS_Header *)&read_buff;
-    dnsquery=(struct DNS_Query*)&read_buff[sizeof(struct DNS_Header)];
-    printf("received:%d\n",ntohs(queryHeader->id));
-    printf("received:%d\n",ntohs(queryHeader->queryNum));
-    printf("received:%s\n",dnsquery->name);
+    dnsquery=(unsigned char*)&read_buff[sizeof(struct DNS_Header)];
+    que=(struct QUESTION *)&read_buff[sizeof(struct DNS_Header)
+    + (strlen((const char*)dnsquery) + 1)];
+    printf("received:%s\n",dnsquery);
+    printf("received:%d\n",ntohs(que->qclass));
+    printf("received:%d\n",ntohs(que->qtype));
     /*
     //收到数据之后开始处理
     if(check_cache()){

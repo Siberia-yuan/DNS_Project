@@ -42,30 +42,34 @@ void sendTcpQuery(char *domainName,int queryType){
     struct DNS_Query *query;
     //initialization of header
     header=(struct DNS_Header*)&send_buff;
-    header->id=htons(0x0001);
-    header->tag=htons(0x0000);
-    header->queryNum=htons(0x0001);
-    header->answerNum=htons(0x0000);
-    header->authorNum=htons(0x0000);
-    header->addNum=htons(0x0000);
+    header->id = (unsigned short) htons(getpid());//id设为进程标识符
+    header->qr = 0; //查询
+    header->opcode = 0; //标准查询
+    header->aa = 0; //不授权回答
+    header->tc = 0; //不可截断
+    header->rd = 1; //期望递归
+    header->ra = 0; //不可用递归
+    header->z = 0; //必须为0
+    header->ad = 0;
+    header->cd = 0;
+    header->rcode = 0;//没有差错
+    header->q_count = htons(1); //1个问题
+    header->ans_count = 0; 
+    header->auth_count = 0;
+    header->add_count = 0;
     //initialization of query
-    /*
-    int len=sizeof(domainName)+1;
-    query->name=(unsigned char *)malloc(len*sizeof(char));
-    memcpy(domainName,query->name,sizeof(len));
-    query->qtype=htons((unsigned short)queryType);
-    query->qclass=htons(0);
-    query=(struct DNS_Query*)&send_buff[sizeof(struct DNS_Header)];
-    */
-    //int len=sizeof(domainName);
-    //query->name=(unsigned char *)malloc(sizeof(char)*len);
-    //memcpy(query->name,domainName,len);
-    query=(struct DNS_Query*)&send_buff[sizeof(struct DNS_Header)];
-    strcpy(query->name,domainName);
-    query->qtype=htons((unsigned short)queryType);
-    query->qclass=htons(0);
-
     
+    unsigned char *qname;
+    struct QUESTION *qinfo = NULL;
+    qname = (unsigned char*) &send_buff[sizeof(struct DNS_Header)];
+
+    strcpy(qname, domainName);//修改域名格式 
+    qinfo = (struct QUESTION*) &send_buff[sizeof(struct DNS_Header)
+    + (strlen((const char*) qname) + 1)]; //qinfo指向问题查询区域的查询类型字段
+
+    qinfo->qtype = htons(queryType); //查询类型为A
+    qinfo->qclass = htons(1); //查询类为1
+
 
     int sock;
     struct sockaddr_in dns_local;
