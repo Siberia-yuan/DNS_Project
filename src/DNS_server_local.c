@@ -4,8 +4,12 @@
 #include<unistd.h>
 #include<arpa/inet.h>
 #include<sys/socket.h>
+#include "message_struct.h"
 
 void error_handling(char* message);
+int check_cache(int clnt_sock,char* hostName,int queryMethod);
+//void sendSubDNS(){}
+char send_buff[]="hello world\n";
 
 int main(int argc,char *argv[]){
     int serv_sock;
@@ -16,10 +20,10 @@ int main(int argc,char *argv[]){
     struct sockaddr_in clnt_addr;
 
     char send_buff[]="hello world\n";
-    char read_buff[200];
+    char read_buff[65535];
 
-    if(argc!=3){
-        printf("Usage: %s <ip> <port>\n",argv[0]);
+    if(argc!=2){
+        printf("Usage: %s <port>\n",argv[0]);
         exit(1);
     }
 
@@ -31,7 +35,7 @@ int main(int argc,char *argv[]){
     memset(&serv_addr,0,sizeof(serv_addr));
     serv_addr.sin_family=AF_INET;
     serv_addr.sin_addr.s_addr=inet_addr("127.0.0.1");
-    serv_addr.sin_port=htons(atoi(argv[2]));
+    serv_addr.sin_port=htons(atoi(argv[1]));
 
     if(bind(serv_sock,(struct sockaddr*)&serv_addr,sizeof(serv_addr))==-1)
         error_handling("bind() error");
@@ -52,10 +56,23 @@ int main(int argc,char *argv[]){
     if(read(clnt_sock,read_buff,sizeof(read_buff)-1)==-1)
         error_handling("read() error");
 
-    for(int i=0;i<20;i++){
-        printf("%x",read_buff[i]);
+    struct DNS_Header *queryHeader;
+    struct DNS_Query *dnsquery;
+    queryHeader=(struct DNS_Header *)&read_buff;
+    dnsquery=(struct DNS_Query*)&read_buff[sizeof(struct DNS_Header)];
+    printf("received:%d\n",ntohs(queryHeader->id));
+    printf("received:%d\n",ntohs(queryHeader->queryNum));
+    printf("received:%s\n",dnsquery->name);
+    /*
+    //收到数据之后开始处理
+    if(check_cache()){
+        close(clnt_sock);
+        close(serv_sock);
+        return 0;
+    }else{
+        //发送数据请求给toplevel
     }
-
+    */
     close(clnt_sock);
     close(serv_sock);
     return 0;
@@ -66,3 +83,10 @@ void error_handling(char* message){
     fputc('\n',stderr);
     exit(1);
 }
+
+/*
+int check_cache(int clnt_sock,char* hostName,int queryMethod){
+
+}*/
+
+//void sendSubDNS(){}

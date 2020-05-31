@@ -8,5 +8,5 @@ mv DNS_client ../bin/DNS_client
 mv DNS_server_local ../bin/DNS_server_local
 
 cd ../bin
-#./DNS_server_local 127.0.0.2 4001
+#./DNS_server_local 4001
 #./DNS_client sdafadffa sadsadd

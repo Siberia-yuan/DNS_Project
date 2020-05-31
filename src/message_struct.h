@@ -2,7 +2,7 @@
 #define _MESSAGE_STRUCT
 
 struct DNS_RR{
-    unsigned char *name;
+    unsigned char name[32];
     unsigned short type;
     unsigned short _class;
     unsigned int ttl;
@@ -20,11 +20,9 @@ struct DNS_Header{
 };
 
 struct DNS_Query{
-    unsigned char *name;
+    unsigned char name[32];
     unsigned short qtype;
     unsigned short qclass;
 };
-
-
 
 #endif
