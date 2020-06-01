@@ -10,6 +10,7 @@
 
 void error_handling(char *err_string);
 void sendTcpQuery(char *domainName,int queryType);
+void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host);
 char receive_buff[65535];
 char send_buff[65535];
 
@@ -42,6 +43,7 @@ void sendTcpQuery(char *domainName,int queryType){
     struct DNS_Query *query;
     //initialization of header
     header=(struct DNS_Header*)&send_buff;
+    header->length=htons(0);
     header->id = (unsigned short) htons(getpid());//id设为进程标识符
     header->qr = 0; //查询
     header->opcode = 0; //标准查询
@@ -63,12 +65,16 @@ void sendTcpQuery(char *domainName,int queryType){
     struct QUESTION *qinfo = NULL;
     qname = (unsigned char*) &send_buff[sizeof(struct DNS_Header)];
 
-    strcpy(qname, domainName);//修改域名格式 
+    //strcpy(qname, domainName);//修改域名格式 
+    ChangetoDnsNameFormat(qname,(unsigned char*)domainName);
+    printf("qname:%s\n",qname);
     qinfo = (struct QUESTION*) &send_buff[sizeof(struct DNS_Header)
     + (strlen((const char*) qname) + 1)]; //qinfo指向问题查询区域的查询类型字段
 
     qinfo->qtype = htons(queryType); //查询类型为A
     qinfo->qclass = htons(1); //查询类为1
+    unsigned short len=sizeof(struct DNS_Header)+strlen((const char*) qname)+1+sizeof(struct QUESTION);
+    header->length=htons(len);
 
 
     int sock;
@@ -87,7 +93,7 @@ void sendTcpQuery(char *domainName,int queryType){
         error_handling("connect() error");
     }
 
-    if(write(sock,send_buff,sizeof(send_buff))==-1){
+    if(write(sock,send_buff,header->length)==-1){
         error_handling("write() error");
     }
     printf("Initiating request...\n");
@@ -100,4 +106,20 @@ void sendTcpQuery(char *domainName,int queryType){
     printf("%s\n",receive_buff);
     close(sock);
     return;
+}
+
+void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host) {
+    int lock = 0, i;
+    strcat((char*) host, ".");
+
+    for (i = 0; i < strlen((char*) host); i++) {
+        if (host[i] == '.') {
+            *dns++ = i - lock;
+            for (; lock < i; lock++) {
+                *dns++ = host[lock];
+            }
+            lock++; 
+        }
+    }
+    *dns++ = '\0';
 }

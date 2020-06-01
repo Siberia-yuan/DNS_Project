@@ -6,65 +6,46 @@
 #include<sys/socket.h>
 #include"message_struct.h"
 
+#define BUF_SIZE 65535
 void error_handling(char* message);
-void handling_request();
-
-int main(int argc,char *argv[]){
+char recv_buff[BUF_SIZE];
+int main(int argc, char *argv[]){
     int serv_sock;
-    int clnt_sock;
-    socklen_t clnt_addr_size;
-
-    struct sockaddr_in serv_addr;
-    struct sockaddr_in clnt_addr;
-
-    char send_buff[]="hello world\n";
-    char read_buff[200];
-
-    if(argc!=3){
-        printf("Usage: %s <ip> <port>\n",argv[0]);
-        exit(1);
+    //char message[BUF_SIZE];
+    int str_len;
+    socklen_t clnt_adr_sz;
+    struct sockaddr_in serv_adr, clnt_adr;
+    if(argc!=2){
+        printf("Usage: %s <port>\n", argv[0]);
+        exit(0);
     }
-
     serv_sock=socket(PF_INET,SOCK_DGRAM,0);
-    if(!serv_sock){
-        error_handling("socket() error");
+    if(serv_sock==-1){
+        error_handling("UDP socket creation error");
     }
 
-    memset(&serv_addr,0,sizeof(serv_addr));
-    serv_addr.sin_family=AF_INET;
-    serv_addr.sin_addr.s_addr=inet_addr("127.0.0.1");
-    serv_addr.sin_port=htons(atoi(argv[2]));
+    memset(&serv_adr,0,sizeof(serv_adr));
+    serv_adr.sin_family=AF_INET;
+    serv_adr.sin_addr.s_addr=htonl(INADDR_ANY);
+    serv_adr.sin_port=htons(atoi(argv[1]));
 
-    if(bind(serv_sock,(struct sockaddr*)&serv_addr,sizeof(serv_addr))==-1)
+    if(bind(serv_sock,(struct sockaddr*)&serv_adr,sizeof(serv_adr))==-1){
         error_handling("bind() error");
-
-    if(listen(serv_sock,5)==-1)
-        error_handling("listen() error");
-
-    clnt_addr_size=sizeof(clnt_addr);
-    clnt_sock=accept(serv_sock,(struct sockaddr*)&clnt_addr,&clnt_addr_size);
-    if(clnt_sock==-1){
-        error_handling("accept error\n");
     }
 
-    write(clnt_sock,send_buff,sizeof(send_buff));
-    
-    //readpart
-    int idx=0;
-    if(read(clnt_sock,read_buff,sizeof(read_buff)-1)==-1)
-        error_handling("read() error");
-
-    struct DNS_Header *queryHeader;
-    struct DNS_Query *dnsquery;
-    queryHeader=(struct DNS_Header *)&read_buff;
-    dnsquery=(struct DNS_Query*)&read_buff[sizeof(struct DNS_Header)];
-    printf("received:%d\n",ntohs(queryHeader->id));
-    printf("received:%d\n",ntohs(queryHeader->queryNum));
-    
-
-    close(clnt_sock);
+    while(1){
+        clnt_adr_sz=sizeof(clnt_adr);
+        str_len=recvfrom(serv_sock,recv_buff,BUF_SIZE,0,(struct sockaddr*)&clnt_adr,&clnt_adr_sz);
+        struct DNS_UDP_Header *header=(struct DNS_UDP_Header *)&recv_buff;
+        char *qname=(char *)&recv_buff[sizeof(struct DNS_UDP_Header)];
+        struct QUESTION *ques=(struct QUESTION*)&recv_buff[sizeof(struct DNS_UDP_Header)+strlen(qname)+1];
+        printf("received:%s\n",qname);
+        //sendto(serv_sock,message,str_len,0,(struct sockaddr*)&clnt_adr,clnt_adr_sz);
+    }
     close(serv_sock);
     return 0;
+
+
 }
 
 void error_handling(char* message){
