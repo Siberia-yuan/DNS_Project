@@ -21,6 +21,7 @@ char send_buff[BUF_SIZE];
 // char* filename = "../RR/testRR";
 char* filename = "../RR/edu_RR";
 char* serverIP = "127.0.1.3";
+int PORT=4001;
 int en_iter = 0;    // 查询RR文件时type必须匹配
 
 int main(int argc, char *argv[]){
@@ -40,8 +41,7 @@ int main(int argc, char *argv[]){
     memset(&serv_adr,0,sizeof(serv_adr));
     serv_adr.sin_family=AF_INET;
     serv_adr.sin_addr.s_addr=inet_addr(serverIP);
-    // serv_adr.sin_port=htons(atoi(argv[1]));
-    serv_adr.sin_port=htons(53);
+    serv_adr.sin_port=htons(PORT);
 
     if(bind(serv_sock,(struct sockaddr*)&serv_adr,sizeof(serv_adr))==-1){
         error_handling("bind() error");
