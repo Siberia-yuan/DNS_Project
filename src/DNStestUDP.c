@@ -22,7 +22,7 @@ int main(int argc, char *argv[]){
     socklen_t adr_sz, clnt_adr_sz;
     struct sockaddr_in serv_adr, recv_adr, clnt_adr;
     if(argc!=5){
-        printf("Usage: %s <ip> <port> www.baidu.com <type>\n", argv[0]);
+        printf("Usage: %s <ip> <port> <domainName> <type>\n", argv[0]);
         exit(1);
     }
     sock=socket(PF_INET,SOCK_DGRAM,0);
