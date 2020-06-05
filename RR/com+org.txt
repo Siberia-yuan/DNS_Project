@@ -1,4 +1,0 @@
-www.microsoft.com,86400,IN,A,192.168.1.51
-www.temp.ietf.org,86400,IN,A,192.168.1.114
-temp.ietf.org,86400,IN,MX,mx.temp.ietf.org
-mx.temp.ietf.org,86400,IN,A,192.168.1.21

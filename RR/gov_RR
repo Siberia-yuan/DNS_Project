@@ -1,0 +1,4 @@
+temp.gov.us 86400 IN A 192.168.1.37
+m.gov.us 86400 IN A 123.13.13.13
+abc.gov.us 86400 IN MX m.gov.us
+asd.gov.us 86400 IN CNAME bsd.gov.us
