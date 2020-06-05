@@ -10,9 +10,9 @@ int match(unsigned char *dest,unsigned char *ref);
 char* ChangetoURL(char* buf, char* dest);
 void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host);
 void error_handling(char* message);
-int check_cache(int clnt_sock,unsigned char* hostName,int queryMethod);
+//int check_cache(int clnt_sock,unsigned char* hostName,int queryMethod);
 int sendUDPQuery(char *destIP,char *destPORT,char *domainName,int queryType);
-
+int defineLocal(char*target);
 
 #define BUF_SIZE 65535
 char send_buff[BUF_SIZE];
@@ -45,6 +45,7 @@ int main(int argc,char *argv[]){
     if(bind(serv_sock,(struct sockaddr*)&serv_addr,sizeof(serv_addr))==-1)
         error_handling("bind() error");
 
+    while(1){
     if(listen(serv_sock,5)==-1)
         error_handling("listen() error");
 
@@ -53,9 +54,7 @@ int main(int argc,char *argv[]){
     if(clnt_sock==-1){
         error_handling("accept error\n");
     }
-    
     //readpart
-    int idx=0;
     if(read(clnt_sock,read_buff,sizeof(read_buff)-1)==-1)
         error_handling("read() error");
 
@@ -99,12 +98,18 @@ int main(int argc,char *argv[]){
         }*/
         //sendBack requested Data */
     sendUDPQuery(rootDNSIP,rootPORT,(char*)dnsquery,ntohs(que->qtype));
+    int flag=1;
     while(1){
-        memcpy(write_buff,recv_buff,sizeof(recv_buff));
+        char tempDestDNS[65];
+        //memcpy(write_buff,recv_buff,sizeof(recv_buff));
+        /*
+        if(flag!=1){
+            sendUDPQuery(tmpDestDNS,"53",(char*)dnsquery,ntohs(que->qtype));
+        }*/
         struct DNS_UDP_Header *recv_header=(struct DNS_UDP_Header *)&recv_buff;
         if (recv_header->rcode == 3) {
-        printf("cannot find answer\n");
-        exit(1);
+            printf("cannot find answer\n");
+            break;
         } else printf("find resource data!\n");
     
         int cur = 0;
@@ -124,6 +129,24 @@ int main(int argc,char *argv[]){
         pdata = recv_buff + cur;
         char url[65];
         char recv_url[65];
+
+        sprintf(tempDestDNS,"%u.%u.%u.%u", (unsigned char)*pdata, (unsigned char)*(pdata + 1), (unsigned char)*(pdata + 2), (unsigned char)*(pdata + 3));
+        if(defineLocal(tempDestDNS)==1){
+            continue;
+        }else{
+            break;
+        }
+        /*
+        if((int)*pdata==127){
+                tmpDestDNS="";
+                strcat(tmpDestDNS,(const char *)itoa((int)*pdata));
+                strcat(tmpDestDNS,".");
+                strcat(tmpDestDNS,(const char *)itoa((int)*(pdata+1)));
+                strcat(tmpDestDNS,".");
+                strcat(tmpDestDNS,(const char *)itoa((int)*(pdata+2)));
+                strcat(tmpDestDNS,".");
+                strcat(tmpDestDNS,(const char *)itoa((int)*(pdata+3)));
+        }*/
         if (type == 1) {
             printf("received: %u.%u.%u.%u\n", (unsigned char)*pdata, (unsigned char)*(pdata + 1), (unsigned char)*(pdata + 2), (unsigned char)*(pdata + 3));
         }
@@ -147,11 +170,12 @@ int main(int argc,char *argv[]){
             else {
                 printf("no MX ip address\n");
             }
+        }
     }
-
-    }
+    memcpy(write_buff,recv_buff,sizeof(recv_buff));
     if(write(clnt_sock,(const void*)write_buff,sizeof(write_buff))==-1){
         error_handling("write() error");
+    }
     }
     close(clnt_sock);
     close(serv_sock);
@@ -341,55 +365,11 @@ int sendUDPQuery(char *destIP,char *destPORT,char *domainName,int queryType){
         exit(1);
     }
     struct DNS_UDP_Header *recv_header=(struct DNS_UDP_Header *)&recv_buff;
-
     // 没找到RR
     if (recvMsgSize == len && recv_header->rcode == 3) {
         printf("cannot find answer\n");
         return -1;
     } else printf("find resource data!\n");
-
-    int cur = 0;
-    cur += sizeof(struct DNS_UDP_Header);
-
-    char *recv_domain=(char *)&recv_buff[cur];
-    cur += strlen((const char*) qname)+1;
-    cur += sizeof(struct QUESTION);
-
-    unsigned short* name = (unsigned short *)&recv_buff[cur];
-    cur += sizeof(unsigned short); // 跳过name
-
-    struct DNS_RR *rr = (struct DNS_RR *)&recv_buff[cur];
-    cur += sizeof(struct DNS_RR);
-
-    // 要从3www5baidu变成www.baidu.com
-    char *pdata;
-    pdata = recv_buff + cur;
-    char url[65];
-    char recv_url[65];
-    if (type == 1) {
-        printf("received: %u.%u.%u.%u\n", (unsigned char)*pdata, (unsigned char)*(pdata + 1), (unsigned char)*(pdata + 2), (unsigned char)*(pdata + 3));
-    }
-    else if (type==5) {
-        memcpy(recv_url, &(recv_buff[cur]), ntohs(rr->data_len));
-        ChangetoURL(recv_url, url);
-        printf("received: %s\n",url);
-    }
-    else if (type==15) {
-        memcpy(recv_url, &(recv_buff[cur+sizeof(unsigned short)]), ntohs(rr->data_len)-sizeof(unsigned short)); // 跳过perference
-        ChangetoURL(recv_url, url);
-        printf("received: %s\n",url);
-        if (recv_header->add_count != 0) {  // 有additional answer
-            cur = cur + ntohs(rr->data_len);
-            cur += sizeof(unsigned short); // 跳过name
-            struct DNS_RR *add_rr = (struct DNS_RR *)&recv_buff[cur];
-            cur += sizeof(struct DNS_RR);
-            pdata = recv_buff + cur;
-            printf("received mx ip: %u.%u.%u.%u\n", (unsigned char)*pdata, (unsigned char)*(pdata + 1), (unsigned char)*(pdata + 2), (unsigned char)*(pdata + 3));
-        }
-        else {
-            printf("no MX ip address\n");
-        }
-    }
     close(sock);
     return 0;
 }
@@ -408,4 +388,13 @@ void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host) {
         }
     }
     *dns++ = '\0';
+}
+
+int defineLocal(char*target){
+    int length=strlen(target);
+    if(*target=='1'&&*(target+1)=='2'&&*(target+2)=='7'){
+        return 1;
+    }else{
+        return 0;
+    }
 }
