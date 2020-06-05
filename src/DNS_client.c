@@ -6,12 +6,15 @@
 #include<string.h>
 #include "message_struct.h"
 
-#define SENDPORT 4001
+
+#define SENDPORT 4002
 
 void error_handling(char *err_string);
 void sendTcpQuery(char *domainName,int queryType);
 void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host);
-char receive_buff[65535];
+char* ChangetoURL(char* buf, char* dest);
+
+char recv_buff[65535];
 char send_buff[65535];
 
 int main(int argc, char *argv[]){
@@ -19,16 +22,70 @@ int main(int argc, char *argv[]){
         printf("Usage: %s <query type> <domain name>\n",argv[0]);
         exit(1);
     }
+    int type;
     if(strcmp(argv[1],"A")==0){
+        type=1;
         sendTcpQuery(argv[2],1);
     }else if(strcmp(argv[1],"MX")==0){
+        type=5;
         sendTcpQuery(argv[2],5);
     }else if(strcmp(argv[1],"CNAME")==0){
+        type=15;
         sendTcpQuery(argv[2],15);
     }else{
         printf("<Query type>: A,MX,CNAME\n");
         exit(1);
     }
+    //processing response...
+    struct DNS_UDP_Header *recv_header=(struct DNS_UDP_Header *)&recv_buff;
+    if (recv_header->rcode == 3) {
+        printf("cannot find answer\n");
+        exit(1);
+    } else printf("find resource data!\n");
+    
+    int cur = 0;
+    cur += sizeof(struct DNS_UDP_Header);
+
+    char *recv_domain=(char *)&recv_buff[cur];
+    cur += strlen((const char*) recv_domain)+1;
+    cur += sizeof(struct QUESTION);
+
+    unsigned short* name = (unsigned short *)&recv_buff[cur];
+    cur += sizeof(unsigned short); // 跳过name
+
+    struct DNS_RR *rr = (struct DNS_RR *)&recv_buff[cur];
+    cur += sizeof(struct DNS_RR);
+
+    // 要从3www5baidu变成www.baidu.com
+    char *pdata;
+    pdata = recv_buff + cur;
+    char url[65];
+    char recv_url[65];
+    if (type == 1) {
+        printf("received: %u.%u.%u.%u\n", (unsigned char)*pdata, (unsigned char)*(pdata + 1), (unsigned char)*(pdata + 2), (unsigned char)*(pdata + 3));
+    }
+    else if (type==5) {
+        memcpy(recv_url, &(recv_buff[cur]), ntohs(rr->data_len));
+        ChangetoURL(recv_url, url);
+        printf("received: %s\n",url);
+    }
+    else if (type==15) {
+        memcpy(recv_url, &(recv_buff[cur+sizeof(unsigned short)]), ntohs(rr->data_len)-sizeof(unsigned short)); // 跳过perference
+        ChangetoURL(recv_url, url);
+        printf("received: %s\n",url);
+        if (recv_header->add_count != 0) {  // 有additional answer
+            cur = cur + ntohs(rr->data_len);
+            cur += sizeof(unsigned short); // 跳过name
+            struct DNS_RR *add_rr = (struct DNS_RR *)&recv_buff[cur];
+            cur += sizeof(struct DNS_RR);
+            pdata = recv_buff + cur;
+            printf("received mx ip: %u.%u.%u.%u\n", (unsigned char)*pdata, (unsigned char)*(pdata + 1), (unsigned char)*(pdata + 2), (unsigned char)*(pdata + 3));
+        }
+        else {
+            printf("no MX ip address\n");
+        }
+    }
+
     return 0;
 }
 
@@ -99,11 +156,10 @@ void sendTcpQuery(char *domainName,int queryType){
     printf("Initiating request...\n");
 
     int idx=0;
-    if(read(sock,receive_buff,sizeof(receive_buff)-1)==-1)
+    if(read(sock,recv_buff,sizeof(recv_buff))==-1)
         error_handling("read() error");
+    printf("received message from server:\n");
     
-    printf("message form dns server:\n");
-    printf("%s\n",receive_buff);
     close(sock);
     return;
 }
@@ -118,29 +174,34 @@ void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host) {
             for (; lock < i; lock++) {
                 *dns++ = host[lock];
             }
-            lock++; 
+            lock++;
         }
     }
     *dns++ = '\0';
 }
 
-void readurl(char* buf, char* dest)
-{
-    int len = strlen(buf);
+//从报文buf里读取url到dest里。格式类似3www5baidu3com0
+char* ChangetoURL(char* buf, char* dest) {
+    int len = strlen((const char*)buf);
     int i = 0, j = 0, k = 0;
     while (i < len)
     {
-        if (buf[i] > 0 && buf[i] <= 63) //����Ǹ�����
+
+        if (buf[i] > 0 && buf[i] <= 63) //如果是个计数
         {
-            for (j = buf[i], i++; j > 0; j--, i++, k++) //j�Ǽ����Ǽ���k��Ŀ��λ���±꣬i�Ǳ�������±�
+            for (j = buf[i], i++; j > 0; j--, i++, k++) //j是计数是几，k是目标位置下标，i是报文里的下标
                 dest[k] = buf[i];
+            i--;
         }
 
-        if (buf[i] != 0)    //���û��������dest��Ӹ�'.'
+        // if (buf[i] != 0)    //如果没结束就在dest里加个'.'
+        if (i<len-1)
         {
-            dest[k] = '.';
+            dest[k] = '.';      // segmentation fault
             k++;
         }
+        i++;
     }
     dest[k] = '\0';
+    return dest;
 }
