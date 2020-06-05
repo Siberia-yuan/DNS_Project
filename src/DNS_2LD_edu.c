@@ -20,8 +20,8 @@ char send_buff[BUF_SIZE];
 
 // char* filename = "../RR/testRR";
 char* filename = "../RR/edu_RR";
-char* serverIP = "127.0.0.1";
-int PORT=4001;
+char* serverIP = "127.0.1.3";
+int PORT=53;
 int en_iter = 0;    // 查询RR文件时type必须匹配
 
 int main(int argc, char *argv[]){

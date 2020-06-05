@@ -19,10 +19,10 @@ char send_buff[BUF_SIZE];
 char recv_buff[BUF_SIZE];
 char write_buff[BUF_SIZE];
 char read_buff[BUF_SIZE];
-char *DNSIP="127.0.0.1";
-int PORT=4002;
-char *rootDNSIP="127.0.0.1";
-char *rootPORT="4001"; 
+char *DNSIP="127.0.0.2";
+int PORT=53;
+char *rootDNSIP="127.0.1.0";
+char *rootPORT="53";
 
 int main(int argc,char *argv[]){
     int serv_sock;
@@ -66,9 +66,12 @@ int main(int argc,char *argv[]){
     que=(struct QUESTION *)&read_buff[sizeof(struct DNS_Header)
     + (strlen((const char*)dnsquery) + 1)];
     printf("received:%s\n",dnsquery);
+    char temp[65];
+    ChangetoURL(dnsquery,temp);
+    printf("temp!!!!!!!!!!!!!!!!!!:%s\n",temp);
     printf("received:%d\n",ntohs(que->qclass));
     printf("received:%d\n",ntohs(que->qtype));
-    
+
     //收到数据之后开始处理
     /*
     if(check_cache(clnt_sock,dnsquery,que->qtype)){
@@ -76,7 +79,7 @@ int main(int argc,char *argv[]){
         close(serv_sock);
         return 0;
     }else{
-        
+
         //发送数据请求给toplevel
         char* ip="127.0.0.1";
         char* port="4002";
@@ -90,22 +93,24 @@ int main(int argc,char *argv[]){
         printf("received udp:%d\n",ntohs(que->qtype));*/
         /*
         while(1){
-            
+
             if(){
                 break;
             }
 
         }*/
         //sendBack requested Data */
-    sendUDPQuery(rootDNSIP,rootPORT,(char*)dnsquery,ntohs(que->qtype));
+    // sendUDPQuery(rootDNSIP,rootPORT,(char*)dnsquery,ntohs(que->qtype));
+    sendUDPQuery(rootDNSIP,rootPORT,(char*)temp,ntohs(que->qtype));
+
     int flag=1;
     while(1){
         char*DestDNS;
         //char tempDestDNS[65];
         //memcpy(write_buff,recv_buff,sizeof(recv_buff));
-        
+
         if(flag!=1){
-            sendUDPQuery(DestDNS,"53",(char*)dnsquery,ntohs(que->qtype));
+            sendUDPQuery(DestDNS,"53",(char*)temp,ntohs(que->qtype));
         }
         flag=0;
         struct DNS_UDP_Header *recv_header=(struct DNS_UDP_Header *)&recv_buff;
@@ -113,7 +118,7 @@ int main(int argc,char *argv[]){
             printf("cannot find answer\n");
             break;
         } else printf("find resource data!\n");
-    
+
         int cur = 0;
         cur += sizeof(struct DNS_UDP_Header);
 
@@ -133,7 +138,8 @@ int main(int argc,char *argv[]){
         char recv_url[65];
 
         sprintf(DestDNS,"%u.%u.%u.%u", (unsigned char)*pdata, (unsigned char)*(pdata + 1), (unsigned char)*(pdata + 2), (unsigned char)*(pdata + 3));
-        
+
+        printf("DestDNS:::%s\n",DestDNS);
         if(defineLocal(DestDNS)==1){
             continue;
         }else{
@@ -370,10 +376,10 @@ int sendUDPQuery(char *destIP,char *destPORT,char *domainName,int queryType){
     }
     struct DNS_UDP_Header *recv_header=(struct DNS_UDP_Header *)&recv_buff;
     // 没找到RR
-    if (recvMsgSize == len && recv_header->rcode == 3) {
-        printf("cannot find answer\n");
-        return -1;
-    } else printf("find resource data!\n");
+    // if (recvMsgSize == len && recv_header->rcode == 3) {
+    //     printf("cannot find answer\n");
+    //     return -1;
+    // } else printf("find resource data!\n");
     close(sock);
     return 0;
 }

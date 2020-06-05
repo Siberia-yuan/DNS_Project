@@ -9,5 +9,4 @@
 domain name, TTL, Class, Type, Value
 
 ip地址必须是符合规范的，不然没法发送
-每一行必须以逗号结尾
 mx的ip必须在对应mx的域名的前面，不然会找不到
