@@ -100,12 +100,14 @@ int main(int argc,char *argv[]){
     sendUDPQuery(rootDNSIP,rootPORT,(char*)dnsquery,ntohs(que->qtype));
     int flag=1;
     while(1){
-        char tempDestDNS[65];
+        char*DestDNS;
+        //char tempDestDNS[65];
         //memcpy(write_buff,recv_buff,sizeof(recv_buff));
-        /*
+        
         if(flag!=1){
-            sendUDPQuery(tmpDestDNS,"53",(char*)dnsquery,ntohs(que->qtype));
-        }*/
+            sendUDPQuery(DestDNS,"53",(char*)dnsquery,ntohs(que->qtype));
+        }
+        flag=0;
         struct DNS_UDP_Header *recv_header=(struct DNS_UDP_Header *)&recv_buff;
         if (recv_header->rcode == 3) {
             printf("cannot find answer\n");
@@ -130,8 +132,9 @@ int main(int argc,char *argv[]){
         char url[65];
         char recv_url[65];
 
-        sprintf(tempDestDNS,"%u.%u.%u.%u", (unsigned char)*pdata, (unsigned char)*(pdata + 1), (unsigned char)*(pdata + 2), (unsigned char)*(pdata + 3));
-        if(defineLocal(tempDestDNS)==1){
+        sprintf(DestDNS,"%u.%u.%u.%u", (unsigned char)*pdata, (unsigned char)*(pdata + 1), (unsigned char)*(pdata + 2), (unsigned char)*(pdata + 3));
+        
+        if(defineLocal(DestDNS)==1){
             continue;
         }else{
             break;
@@ -147,6 +150,7 @@ int main(int argc,char *argv[]){
                 strcat(tmpDestDNS,".");
                 strcat(tmpDestDNS,(const char *)itoa((int)*(pdata+3)));
         }*/
+        /*
         if (type == 1) {
             printf("received: %u.%u.%u.%u\n", (unsigned char)*pdata, (unsigned char)*(pdata + 1), (unsigned char)*(pdata + 2), (unsigned char)*(pdata + 3));
         }
@@ -170,7 +174,7 @@ int main(int argc,char *argv[]){
             else {
                 printf("no MX ip address\n");
             }
-        }
+        }*/
     }
     memcpy(write_buff,recv_buff,sizeof(recv_buff));
     if(write(clnt_sock,(const void*)write_buff,sizeof(write_buff))==-1){
