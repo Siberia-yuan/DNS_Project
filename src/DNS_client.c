@@ -22,11 +22,11 @@ int main(int argc, char *argv[]){
     if(strcmp(argv[1],"A")==0){
         sendTcpQuery(argv[2],1);
     }else if(strcmp(argv[1],"MX")==0){
-        sendTcpQuery(argv[2],2);
-    }else if(strcmp(argv[1],"EX")==0){
-        sendTcpQuery(argv[2],3);
+        sendTcpQuery(argv[2],5);
+    }else if(strcmp(argv[1],"CNAME")==0){
+        sendTcpQuery(argv[2],15);
     }else{
-        printf("<Query type>: A,MX,TX\n");
+        printf("<Query type>: A,MX,CNAME\n");
         exit(1);
     }
     return 0;
@@ -122,4 +122,25 @@ void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host) {
         }
     }
     *dns++ = '\0';
+}
+
+void readurl(char* buf, char* dest)
+{
+    int len = strlen(buf);
+    int i = 0, j = 0, k = 0;
+    while (i < len)
+    {
+        if (buf[i] > 0 && buf[i] <= 63) //����Ǹ�����
+        {
+            for (j = buf[i], i++; j > 0; j--, i++, k++) //j�Ǽ����Ǽ���k��Ŀ��λ���±꣬i�Ǳ�������±�
+                dest[k] = buf[i];
+        }
+
+        if (buf[i] != 0)    //���û��������dest��Ӹ�'.'
+        {
+            dest[k] = '.';
+            k++;
+        }
+    }
+    dest[k] = '\0';
 }

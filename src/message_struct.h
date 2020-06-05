@@ -2,12 +2,12 @@
 #define _MESSAGE_STRUCT
 
 struct DNS_RR{
-    unsigned char name[32];
+    //unsigned char *name;
     unsigned short type;
     unsigned short _class;
     unsigned int ttl;
     unsigned short data_len;
-    unsigned char *rdata;
+    //unsigned char *rdata;
 };
 
 struct DNS_Header{
