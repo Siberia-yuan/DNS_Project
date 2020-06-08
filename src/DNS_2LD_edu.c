@@ -29,10 +29,7 @@ int main(int argc, char *argv[]){
     int str_len;
     socklen_t clnt_adr_sz;
     struct sockaddr_in serv_adr, clnt_adr;
-    // if(argc!=2){
-    //     printf("Usage: %s <port>\n", argv[0]);
-    //     exit(1);
-    // }
+    
     serv_sock=socket(PF_INET,SOCK_DGRAM,0);
     if(serv_sock==-1){
         error_handling("UDP socket creation error");
@@ -63,9 +60,9 @@ int main(int argc, char *argv[]){
         printf("received:%s\n",qname);
         unsigned short len=sizeof(struct DNS_UDP_Header)+strlen((const char*) qname)+1+sizeof(struct QUESTION);
 
-        // 域名转换成www.baidu.com
+
         char ori_url[65];
-        memcpy(ori_url, &(send_buff[sizeof(struct DNS_UDP_Header)]), str_len);	//获取请求报文中的域名表示
+        memcpy(ori_url, &(send_buff[sizeof(struct DNS_UDP_Header)]), str_len);	
 
         unsigned short type1 = ntohs(ques->qtype);
         int type = (int)type1;
@@ -80,7 +77,6 @@ int main(int argc, char *argv[]){
             printf("cannot find resource data\n");
             header->qr = 1; // 回答
             header->rcode = 3;
-            // printf("rcode:%d\n", header->rcode );
             printf("starting sending: cannot find resource data message.\n");
             int send_len = sendto(serv_sock,send_buff,len,0,(struct sockaddr*)&clnt_adr,sizeof(clnt_adr));
             if (send_len<0) {
@@ -144,11 +140,7 @@ int main(int argc, char *argv[]){
             found1 = strcmp(mxip,"");
             if (found1 == 0) {  // RR里没找到
                 printf("cannot find mx ip\n");
-                // printf("starting sending: cannot find mxip message.\n");
-                // int send_len = sendto(serv_sock,send_buff,len,0,(struct sockaddr*)&clnt_adr,sizeof(clnt_adr));
-                // if (send_len<0) {
-                //     printf("send fail\n");
-                // }
+                
             }
             else {
                 header->add_count = htons(1);
@@ -167,10 +159,8 @@ int main(int argc, char *argv[]){
 
                 unsigned long mxip_data = (unsigned long)inet_addr(mxip);
                 memcpy(send_buff + len, &mxip_data, sizeof(unsigned long));
-                // printf("resource data-mx ip: %s", mxip);
                 len += sizeof(unsigned long);
 
-                // len-=4;
             }
         }
 
@@ -249,7 +239,6 @@ int match(unsigned char *dest,unsigned char *ref) {  // ref是文件里的，短
 
     for(int i=length-1;i>=0;i--){
         if(*(dest+i+length1)<64 && *(dest+i+length1)>0 && *(ref+i)=='.') {
-        // if(*(dest+i+length1)=='.' && *(ref+i)=='.') {
             continue;
         }else{
             if(*(dest+i+length1)!=*(ref+i)){

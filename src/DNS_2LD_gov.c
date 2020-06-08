@@ -138,18 +138,13 @@ int main(int argc, char *argv[]){
             rrResponse->data_len = htons(mxname_len + sizeof( unsigned short)); // data length要包含perference的长度
             len += mxname_len;
 
-            // additional records, 对应的ip
+ 
             mxip = searchIP(mxname,1,mxip);
-            // printf("mx ip: %s\n",mxip);
             int found1;
             found1 = strcmp(mxip,"");
             if (found1 == 0) {  // RR里没找到
                 printf("cannot find mx ip\n");
-                // printf("starting sending: cannot find mxip message.\n");
-                // int send_len = sendto(serv_sock,send_buff,len,0,(struct sockaddr*)&clnt_adr,sizeof(clnt_adr));
-                // if (send_len<0) {
-                //     printf("send fail\n");
-                // }
+                
             }
             else {
                 header->add_count = htons(1);
@@ -250,7 +245,6 @@ int match(unsigned char *dest,unsigned char *ref) {  // ref是文件里的，短
 
     for(int i=length-1;i>=0;i--){
         if(*(dest+i+length1)<64 && *(dest+i+length1)>0 && *(ref+i)=='.') {
-        // if(*(dest+i+length1)=='.' && *(ref+i)=='.') {
             continue;
         }else{
             if(*(dest+i+length1)!=*(ref+i)){

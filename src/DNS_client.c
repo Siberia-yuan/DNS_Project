@@ -194,7 +194,7 @@ char* ChangetoURL(char* buf, char* dest) {
             i--;
         }
 
-        // if (buf[i] != 0)    //如果没结束就在dest里加个'.'
+        //如果没结束就在dest里加个'.'
         if (i<len-1)
         {
             dest[k] = '.';      // segmentation fault

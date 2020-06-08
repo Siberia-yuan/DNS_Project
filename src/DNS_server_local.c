@@ -72,34 +72,8 @@ int main(int argc,char *argv[]){
     printf("received:%d\n",ntohs(que->qclass));
     printf("received:%d\n",ntohs(que->qtype));
 
-    //收到数据之后开始处理
-    /*
-    if(check_cache(clnt_sock,dnsquery,que->qtype)){
-        close(clnt_sock);
-        close(serv_sock);
-        return 0;
-    }else{
-
-        //发送数据请求给toplevel
-        char* ip="127.0.0.1";
-        char* port="4002";
-        //sendUDPQuery
-        sendUDPQuery(dnsquery,1,ip,port);
-        struct DNS_UDP_Header *header=(struct DNS_UDP_Header *)&recv_buff;
-        dnsquery=(unsigned char*)&recv_buff[sizeof(struct DNS_UDP_Header)];
-        que=(struct QUESTION *)&recv_buff[sizeof(struct DNS_UDP_Header)+(strlen((const char*)dnsquery)+1)];
-        printf("received udp:%s\n",dnsquery);
-        printf("received udp:%d\n",ntohs(que->qclass));
-        printf("received udp:%d\n",ntohs(que->qtype));*/
-        /*
-        while(1){
-
-            if(){
-                break;
-            }
-
-        }*/
-        //sendBack requested Data */
+    
+    
     // sendUDPQuery(rootDNSIP,rootPORT,(char*)dnsquery,ntohs(que->qtype));
     sendUDPQuery(rootDNSIP,rootPORT,(char*)temp,ntohs(que->qtype));
 
@@ -145,42 +119,7 @@ int main(int argc,char *argv[]){
         }else{
             break;
         }
-        /*
-        if((int)*pdata==127){
-                tmpDestDNS="";
-                strcat(tmpDestDNS,(const char *)itoa((int)*pdata));
-                strcat(tmpDestDNS,".");
-                strcat(tmpDestDNS,(const char *)itoa((int)*(pdata+1)));
-                strcat(tmpDestDNS,".");
-                strcat(tmpDestDNS,(const char *)itoa((int)*(pdata+2)));
-                strcat(tmpDestDNS,".");
-                strcat(tmpDestDNS,(const char *)itoa((int)*(pdata+3)));
-        }*/
-        /*
-        if (type == 1) {
-            printf("received: %u.%u.%u.%u\n", (unsigned char)*pdata, (unsigned char)*(pdata + 1), (unsigned char)*(pdata + 2), (unsigned char)*(pdata + 3));
-        }
-        else if (type==5) {
-            memcpy(recv_url, &(recv_buff[cur]), ntohs(rr->data_len));
-            ChangetoURL(recv_url, url);
-            printf("received: %s\n",url);
-        }
-        else if (type==15) {
-            memcpy(recv_url, &(recv_buff[cur+sizeof(unsigned short)]), ntohs(rr->data_len)-sizeof(unsigned short)); // 跳过perference
-            ChangetoURL(recv_url, url);
-            printf("received: %s\n",url);
-            if (recv_header->add_count != 0) {  // 有additional answer
-                cur = cur + ntohs(rr->data_len);
-                cur += sizeof(unsigned short); // 跳过name
-                struct DNS_RR *add_rr = (struct DNS_RR *)&recv_buff[cur];
-                cur += sizeof(struct DNS_RR);
-                pdata = recv_buff + cur;
-                printf("received mx ip: %u.%u.%u.%u\n", (unsigned char)*pdata, (unsigned char)*(pdata + 1), (unsigned char)*(pdata + 2), (unsigned char)*(pdata + 3));
-            }
-            else {
-                printf("no MX ip address\n");
-            }
-        }*/
+
     }
     memcpy(write_buff,recv_buff,sizeof(recv_buff));
     if(write(clnt_sock,(const void*)write_buff,sizeof(write_buff))==-1){
@@ -198,75 +137,6 @@ void error_handling(char* message){
     exit(1);
 }
 
-/*
-int check_cache(int clnt_sock,unsigned char* hostName,int queryMethod){
-    char* filename = "../cache/local_cache";
-    FILE *fp=fopen(filename,"r");
-    if(fp==NULL) {
-        printf("file open error\n");
-        return -1;
-    }
-    printf("open success\n");
-    char str[11];
-    int count=0;
-    while(!feof(fp)) {
-        if(count==0){
-            fscanf(fp,"%[^,]%*c",str);
-            count++;
-            if(match(hostName,(unsigned char*)str)){
-                struct DNS_RR *rrResponse;
-                memset(&write_buff,0,sizeof(write_buff));
-                unsigned char *dnsName;
-                dnsName=(unsigned char*)&write_buff;
-                ChangetoDnsNameFormat(dnsName,hostName);
-                rrResponse=(struct DNS_RR*)&write_buff[strlen((const char*)dnsName)+1];
-                rrResponse->data_len=0;
-                fscanf(fp,"%[^,]%*c",str);//ttl
-                count++;
-                rrResponse->ttl=htons(atoi(str));
-                fscanf(fp,"%[^,]%*c",str);//IN
-                count++;
-                fscanf(fp,"%[^,]%*c",str);//A
-                count++;
-                rrResponse->type=1;
-                rrResponse->_class=1;
-                fscanf(fp,"%[^,]%*c",str);//responding addr
-                count++;
-                unsigned char* rdata=(unsigned char*)&write_buff[strlen((const char*)dnsName)+1+sizeof(struct DNS_RR)];
-                //ChangetoDnsNameFormat(rdata,(unsigned char*)str);
-                strcpy((char *)rdata,str);
-                rrResponse->data_len=strlen((const char*)dnsName)+1+sizeof(struct DNS_RR)+strlen((const char*)rdata);
-                write(clnt_sock,write_buff,sizeof(write_buff));
-                return 1;//finding result
-            }
-        }
-        count++;
-        if (count>4){
-            count = 0;  // 到新的一行了
-            fgetc(fp);  // 去除换行符
-        }
-    }
-    //No result
-    fclose(fp);
-    return 0;
-}
-
-void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host) {
-    int lock = 0, i;
-    strcat((char*) host, ".");
-
-    for (i = 0; i < strlen((char*) host); i++) {
-        if (host[i] == '.') {
-            *dns++ = i - lock;
-            for (; lock < i; lock++) {
-                *dns++ = host[lock];
-            }
-            lock++;
-        }
-    }
-    *dns++ = '\0';
-}
-*/
 
 //从报文buf里读取url到dest里。格式类似3www5baidu3com0
 char* ChangetoURL(char* buf, char* dest) {
@@ -375,11 +245,7 @@ int sendUDPQuery(char *destIP,char *destPORT,char *domainName,int queryType){
         exit(1);
     }
     struct DNS_UDP_Header *recv_header=(struct DNS_UDP_Header *)&recv_buff;
-    // 没找到RR
-    // if (recvMsgSize == len && recv_header->rcode == 3) {
-    //     printf("cannot find answer\n");
-    //     return -1;
-    // } else printf("find resource data!\n");
+
     close(sock);
     return 0;
 }
