@@ -1,3 +1,11 @@
 # DNS_Project
-It is just a coursework project.
+Coursework project, a DNS system which is capable of iterative query.
+
+## build
+```
+  $ ./compile.sh
+
+```
+ 
+
 
