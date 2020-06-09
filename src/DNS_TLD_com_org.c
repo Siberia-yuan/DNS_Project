@@ -14,6 +14,7 @@ char* searchIP(char* domainName, int type, char* ip);
 int match(unsigned char *dest,unsigned char *ref);
 int ChangeTypetoInt(char *str);
 void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host);
+int defineLocal(char*target);
 
 char recv_buff[BUF_SIZE];
 char send_buff[BUF_SIZE];
@@ -44,6 +45,8 @@ int main(int argc, char *argv[]){
     if(bind(serv_sock,(struct sockaddr*)&serv_adr,sizeof(serv_adr))==-1){
         error_handling("bind() error");
     }
+    printf("TLD server start\n");
+    printf("===============\n");
 
     char* ip;
     ip = (char *)malloc(60);
@@ -92,7 +95,7 @@ int main(int argc, char *argv[]){
         header->ans_count = htons(1);
 
         // 构造RR
-        unsigned short name = htons(0xc00c);//域名指针（偏移量）
+        unsigned short name = htons(0xc00c); //域名指针（偏移量）
         memcpy(send_buff+len, &name, sizeof(unsigned short));
         len += sizeof(unsigned short);
 
@@ -103,6 +106,10 @@ int main(int argc, char *argv[]){
         rrResponse->ttl1 = htons(0x0000);
         rrResponse->ttl2 = htons(0x012c);
 
+        if (defineLocal(ip)==1) {
+         rrResponse->type =  htons(1);
+        }
+
         // resource data: ip地址
         len += sizeof(struct DNS_RR);
         // type=A
@@ -111,13 +118,14 @@ int main(int argc, char *argv[]){
             unsigned long resource_data = (unsigned long)inet_addr(ip);
             memcpy(send_buff + len, &resource_data, sizeof(unsigned long));
             len += sizeof(unsigned long);
-        
+
 
         printf("starting sending\n");
         int send_len = sendto(serv_sock,send_buff,len,0,(struct sockaddr*)&clnt_adr,sizeof(clnt_adr));
         if (send_len<0 ) {
             printf("send fail\n");
         }
+        printf("===============\n");
     }
 
     free(mxip);
@@ -210,5 +218,14 @@ int ChangeTypetoInt(char *str) {
     }
     else {
         return -1;
+    }
+}
+
+int defineLocal(char*target){
+    int length=strlen(target);
+    if(*target=='1'&&*(target+1)=='2'&&*(target+2)=='7'){
+        return 1;
+    }else{
+        return 0;
     }
 }

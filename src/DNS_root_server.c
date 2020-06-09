@@ -14,6 +14,7 @@ char* searchIP(char* domainName, int type, char* ip);
 int match(unsigned char *dest,unsigned char *ref);
 int ChangeTypetoInt(char *str);
 void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host);
+int defineLocal(char*target);
 
 char recv_buff[BUF_SIZE];
 char send_buff[BUF_SIZE];
@@ -29,7 +30,7 @@ int main(int argc, char *argv[]){
     int str_len;
     socklen_t clnt_adr_sz;
     struct sockaddr_in serv_adr, clnt_adr;
-   
+
     serv_sock=socket(PF_INET,SOCK_DGRAM,0);
     if(serv_sock==-1){
         error_handling("UDP socket creation error");
@@ -43,6 +44,8 @@ int main(int argc, char *argv[]){
     if(bind(serv_sock,(struct sockaddr*)&serv_adr,sizeof(serv_adr))==-1){
         error_handling("bind() error");
     }
+    printf("root server start\n");
+    printf("===============\n");
 
     char* ip;
     ip = (char *)malloc(60);
@@ -102,6 +105,9 @@ int main(int argc, char *argv[]){
         rrResponse->ttl1 = htons(0x0000);
         rrResponse->ttl2 = htons(0x012c);
 
+        if (defineLocal(ip)==1) {
+         rrResponse->type =  htons(1);
+        }
         // resource data: ip地址
         len += sizeof(struct DNS_RR);
 
@@ -116,6 +122,8 @@ int main(int argc, char *argv[]){
         if (send_len<0 ) {
             printf("send fail\n");
         }
+        printf("===============\n");
+
     }
 
     free(mxip);
@@ -162,11 +170,11 @@ char* searchIP(char* domainName, int type, char* resultIP) {
 
     while (!feof(fp)) {
         fscanf(fp,"%s %d %s %s %s\n",&domain,&ttl,&class,&typeF,&resource);
-        printf("str: %s\n",domain);
-        printf("other:%d,%s,%s,%s\n",&ttl,&class,&typeF,&resource);
+        // printf("str: %s\n",domain);
+        // printf("other:%d,%s,%s,%s\n",&ttl,&class,&typeF,&resource);
         if (match(domainName,domain) == 1) {
             int type1 = ChangeTypetoInt(typeF);
-            printf("type:%d,%d\n",type,type1);
+            // printf("type:%d,%d\n",type,type1);
             if (type1 == type || en_iter==1) { // 找到对应RR条目 (type也相同)
                 strcpy(resultIP,resource);
                 break;
@@ -182,7 +190,7 @@ char* searchIP(char* domainName, int type, char* resultIP) {
 int match(unsigned char *dest,unsigned char *ref) {  // ref是文件里的，短的
     int length=(int)strlen((char *)ref);
     int length1=(int)strlen((char *)dest)-length;
-    printf("match: %s, %s\n",dest,ref);
+    // printf("match: %s, %s\n",dest,ref);
 
     for(int i=length-1;i>=0;i--){
         if(*(dest+i+length1)<64 && *(dest+i+length1)>0 && *(ref+i)=='.') {
@@ -209,5 +217,14 @@ int ChangeTypetoInt(char *str) {
     }
     else {
         return -1;
+    }
+}
+
+int defineLocal(char*target){
+    int length=strlen(target);
+    if(*target=='1'&&*(target+1)=='2'&&*(target+2)=='7'){
+        return 1;
+    }else{
+        return 0;
     }
 }

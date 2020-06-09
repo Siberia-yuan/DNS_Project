@@ -16,6 +16,7 @@ char* ChangetoURL(char* buf, char* dest);
 
 char recv_buff[65535];
 char send_buff[65535];
+char send_buff1[65535];
 
 int main(int argc, char *argv[]){
     if(argc!=3){
@@ -43,7 +44,7 @@ int main(int argc, char *argv[]){
         exit(1);
     } else printf("find resource data!\n");
 
-    int cur = 0;
+    int cur = 2;
     cur += sizeof(struct DNS_UDP_Header);
 
     char *recv_domain=(char *)&recv_buff[cur];
@@ -133,6 +134,9 @@ void sendTcpQuery(char *domainName,int queryType){
     unsigned short len=sizeof(struct DNS_Header)+strlen((const char*) qname)+1+sizeof(struct QUESTION);
     header->length=htons(len);
 
+    // unsigned short tcp_len = htons(len);
+    // memcpy(send_buff1, &tcp_len, sizeof(unsigned short));
+    // memcpy(send_buff1+2, &send_buff, sizeof(recv_buff)-2);
 
     int sock;
     struct sockaddr_in dns_local;
@@ -150,7 +154,7 @@ void sendTcpQuery(char *domainName,int queryType){
         error_handling("connect() error");
     }
 
-    if(write(sock,send_buff,header->length)==-1){
+    if(write(sock,send_buff,len+2)==-1){
         error_handling("write() error");
     }
     printf("Initiating request...\n");
@@ -158,7 +162,7 @@ void sendTcpQuery(char *domainName,int queryType){
     int idx=0;
     if(read(sock,recv_buff,sizeof(recv_buff))==-1)
         error_handling("read() error");
-    printf("received message from server:\n");
+    // printf("received message from server:\n");
 
     close(sock);
     return;

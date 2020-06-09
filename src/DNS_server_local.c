@@ -44,6 +44,8 @@ int main(int argc,char *argv[]){
 
     if(bind(serv_sock,(struct sockaddr*)&serv_addr,sizeof(serv_addr))==-1)
         error_handling("bind() error");
+    printf("local server start\n");
+    printf("===============\n");
 
     while(1){
     if(listen(serv_sock,5)==-1)
@@ -68,15 +70,13 @@ int main(int argc,char *argv[]){
     printf("received:%s\n",dnsquery);
     char temp[65];
     ChangetoURL(dnsquery,temp);
-    printf("temp!!!!!!!!!!!!!!!!!!:%s\n",temp);
-    printf("received:%d\n",ntohs(que->qclass));
-    printf("received:%d\n",ntohs(que->qtype));
+    // printf("temp!!!!!!!!!!!!!!!!!!:%s\n",temp);
+    // printf("received:%d\n",ntohs(que->qclass));
+    // printf("received:%d\n",ntohs(que->qtype));
 
-    
-    
     // sendUDPQuery(rootDNSIP,rootPORT,(char*)dnsquery,ntohs(que->qtype));
     sendUDPQuery(rootDNSIP,rootPORT,(char*)temp,ntohs(que->qtype));
-
+    int recvMsgSize=0;
     int flag=1;
     while(1){
         char*DestDNS;
@@ -84,7 +84,7 @@ int main(int argc,char *argv[]){
         //memcpy(write_buff,recv_buff,sizeof(recv_buff));
 
         if(flag!=1){
-            sendUDPQuery(DestDNS,"53",(char*)temp,ntohs(que->qtype));
+            recvMsgSize = sendUDPQuery(DestDNS,"53",(char*)temp,ntohs(que->qtype));
         }
         flag=0;
         struct DNS_UDP_Header *recv_header=(struct DNS_UDP_Header *)&recv_buff;
@@ -113,18 +113,23 @@ int main(int argc,char *argv[]){
 
         sprintf(DestDNS,"%u.%u.%u.%u", (unsigned char)*pdata, (unsigned char)*(pdata + 1), (unsigned char)*(pdata + 2), (unsigned char)*(pdata + 3));
 
-        printf("DestDNS:::%s\n",DestDNS);
+        // printf("DestDNS:::%s\n",DestDNS);
         if(defineLocal(DestDNS)==1){
+            printf("send to: %s\n", DestDNS);
             continue;
         }else{
             break;
         }
 
     }
-    memcpy(write_buff,recv_buff,sizeof(recv_buff));
-    if(write(clnt_sock,(const void*)write_buff,sizeof(write_buff))==-1){
+    unsigned short tcp_len = htons(recvMsgSize);
+    memcpy(write_buff, &tcp_len, sizeof(unsigned short));
+
+    memcpy(write_buff+2,recv_buff,sizeof(recv_buff));
+    if(write(clnt_sock,(const void*)write_buff,recvMsgSize+2)==-1){
         error_handling("write() error");
     }
+    printf("===============\n");
     }
     close(clnt_sock);
     close(serv_sock);
@@ -247,7 +252,7 @@ int sendUDPQuery(char *destIP,char *destPORT,char *domainName,int queryType){
     struct DNS_UDP_Header *recv_header=(struct DNS_UDP_Header *)&recv_buff;
 
     close(sock);
-    return 0;
+    return recvMsgSize;
 }
 
 void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host) {
