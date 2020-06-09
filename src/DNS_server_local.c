@@ -78,7 +78,7 @@ int main(int argc,char *argv[]){
         char temp[65];
         ChangetoURL(dnsquery,temp);
         //改了
-        char* dnsDomainName;
+        char dnsDomainName[65];
         ChangetoDnsNameFormat(dnsDomainName,temp);
         int sendLength=checkCache(dnsDomainName,htons(que->qtype),read_len);
 
