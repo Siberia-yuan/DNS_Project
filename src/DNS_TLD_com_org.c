@@ -14,7 +14,6 @@ char* searchIP(char* domainName, int type, char* ip);
 int match(unsigned char *dest,unsigned char *ref);
 int ChangeTypetoInt(char *str);
 void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host);
-int defineLocal(char*target);
 
 char recv_buff[BUF_SIZE];
 char send_buff[BUF_SIZE];
@@ -64,9 +63,9 @@ int main(int argc, char *argv[]){
         printf("received:%s\n",qname);
         unsigned short len=sizeof(struct DNS_UDP_Header)+strlen((const char*) qname)+1+sizeof(struct QUESTION);
 
-        // 域名转换成www.baidu.com
+
         char ori_url[65];
-        memcpy(ori_url, &(send_buff[sizeof(struct DNS_UDP_Header)]), str_len);	//获取请求报文中的域名表示
+        memcpy(ori_url, &(send_buff[sizeof(struct DNS_UDP_Header)]), str_len);
 
         unsigned short type1 = ntohs(ques->qtype);
         int type = (int)type1;
@@ -81,7 +80,6 @@ int main(int argc, char *argv[]){
             printf("cannot find resource data\n");
             header->qr = 1; // 回答
             header->rcode = 3;
-            // printf("rcode:%d\n", header->rcode );
             printf("starting sending: cannot find resource data message.\n");
             int send_len = sendto(serv_sock,send_buff,len,0,(struct sockaddr*)&clnt_adr,sizeof(clnt_adr));
             if (send_len<0) {
@@ -95,7 +93,7 @@ int main(int argc, char *argv[]){
         header->ans_count = htons(1);
 
         // 构造RR
-        unsigned short name = htons(0xc00c); //域名指针（偏移量）
+        unsigned short name = htons(0xc00c);//域名指针（偏移量）
         memcpy(send_buff+len, &name, sizeof(unsigned short));
         len += sizeof(unsigned short);
 
@@ -106,19 +104,68 @@ int main(int argc, char *argv[]){
         rrResponse->ttl1 = htons(0x0000);
         rrResponse->ttl2 = htons(0x012c);
 
-        if (defineLocal(ip)==1) {
-         rrResponse->type =  htons(1);
-        }
-
         // resource data: ip地址
         len += sizeof(struct DNS_RR);
         // type=A
-        // if (type==1) {
+        if (type==1) {
             rrResponse->data_len = htons(0x0004);
             unsigned long resource_data = (unsigned long)inet_addr(ip);
             memcpy(send_buff + len, &resource_data, sizeof(unsigned long));
             len += sizeof(unsigned long);
+        }
+        // type=CNAME
+        else if (type==5) {
+            unsigned char *cname;
+            cname = (unsigned char*) &send_buff[len];
+            ChangetoDnsNameFormat(cname,(ip));
+            unsigned short cname_len = strlen((const char*)cname)+1;
+            rrResponse->data_len = htons(cname_len);
+            len += cname_len;
+        }
+        // type=MX
+        else if (type==15) {
+            // perference
+            unsigned short perference = htons(5);
+            memcpy(send_buff+len, &perference, sizeof(unsigned short));
+            len += sizeof(unsigned short);
+            // mx地址=mail+name指针
+            unsigned char *mxname;
+            mxname = (unsigned char*) &send_buff[len];
+            ChangetoDnsNameFormat(mxname,(ip));
+            unsigned short mxname_len = strlen((const char*)mxname)+1;
+            rrResponse->data_len = htons(mxname_len + sizeof( unsigned short)); // data length要包含perference的长度
+            len += mxname_len;
 
+            // additional records, 对应的ip
+            mxip = searchIP(mxname,1,mxip);
+            printf("mx ip: %s\n",mxip);
+            int found1;
+            found1 = strcmp(mxip,"");
+            if (found1 == 0) {  // RR里没找到
+                printf("cannot find mx ip\n");
+
+            }
+            else {
+                header->add_count = htons(1);
+                unsigned short name1 = htons(0xc02b); // 域名偏移量 TODO: 改成mx域名的偏移量
+                memcpy(send_buff+len, &name1, sizeof(unsigned short));
+                len += sizeof(unsigned short);
+
+                struct DNS_RR *rrResponse = NULL;
+                rrResponse = (struct DNS_RR*) &send_buff[len];
+                rrResponse->type = htons(1);
+                rrResponse->_class = htons(0x0001);
+                rrResponse->ttl1 = htons(0x0000);
+                rrResponse->ttl2 = htons(0x0012c);
+                rrResponse->data_len = htons(0x0004);
+                len += sizeof(struct DNS_RR);
+
+                unsigned long mxip_data = (unsigned long)inet_addr(mxip);
+                memcpy(send_buff + len, &mxip_data, sizeof(unsigned long));
+                len += sizeof(unsigned long);
+
+            }
+        }
 
         printf("starting sending\n");
         int send_len = sendto(serv_sock,send_buff,len,0,(struct sockaddr*)&clnt_adr,sizeof(clnt_adr));
@@ -126,6 +173,7 @@ int main(int argc, char *argv[]){
             printf("send fail\n");
         }
         printf("===============\n");
+
     }
 
     free(mxip);
@@ -172,11 +220,11 @@ char* searchIP(char* domainName, int type, char* resultIP) {
 
     while (!feof(fp)) {
         fscanf(fp,"%s %d %s %s %s\n",&domain,&ttl,&class,&typeF,&resource);
-        printf("str: %s\n",domain);
-        printf("other:%d,%s,%s,%s\n",&ttl,&class,&typeF,&resource);
+        // printf("str: %s\n",domain);
+        // printf("other:%d,%s,%s,%s\n",&ttl,&class,&typeF,&resource);
         if (match(domainName,domain) == 1) {
             int type1 = ChangeTypetoInt(typeF);
-            printf("type:%d,%d\n",type,type1);
+            // printf("type:%d,%d\n",type,type1);
             if (type1 == type || en_iter==1) { // 找到对应RR条目 (type也相同)
                 strcpy(resultIP,resource);
                 break;
@@ -192,7 +240,7 @@ char* searchIP(char* domainName, int type, char* resultIP) {
 int match(unsigned char *dest,unsigned char *ref) {  // ref是文件里的，短的
     int length=(int)strlen((char *)ref);
     int length1=(int)strlen((char *)dest)-length;
-    printf("match: %s, %s\n",dest,ref);
+    // printf("match: %s, %s\n",dest,ref);
 
     for(int i=length-1;i>=0;i--){
         if(*(dest+i+length1)<64 && *(dest+i+length1)>0 && *(ref+i)=='.') {
@@ -218,14 +266,5 @@ int ChangeTypetoInt(char *str) {
     }
     else {
         return -1;
-    }
-}
-
-int defineLocal(char*target){
-    int length=strlen(target);
-    if(*target=='1'&&*(target+1)=='2'&&*(target+2)=='7'){
-        return 1;
-    }else{
-        return 0;
     }
 }

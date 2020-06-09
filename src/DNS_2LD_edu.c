@@ -1,4 +1,4 @@
-// gov_RR
+// edu_RR
 
 #include<stdio.h>
 #include<stdlib.h>
@@ -137,7 +137,7 @@ int main(int argc, char *argv[]){
 
             // additional records, 对应的ip
             mxip = searchIP(mxname,1,mxip);
-            // printf("mx ip: %s\n",mxip);
+            printf("mx ip: %s\n",mxip);
             int found1;
             found1 = strcmp(mxip,"");
             if (found1 == 0) {  // RR里没找到

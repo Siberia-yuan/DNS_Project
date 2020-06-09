@@ -38,13 +38,13 @@ int main(int argc, char *argv[]){
         exit(1);
     }
     //processing response...
-    struct DNS_UDP_Header *recv_header=(struct DNS_UDP_Header *)&recv_buff;
+    int cur = 2;
+    struct DNS_UDP_Header *recv_header=(struct DNS_UDP_Header *)&recv_buff[cur];
     if (recv_header->rcode == 3) {
         printf("cannot find answer\n");
         exit(1);
     } else printf("find resource data!\n");
 
-    int cur = 2;
     cur += sizeof(struct DNS_UDP_Header);
 
     char *recv_domain=(char *)&recv_buff[cur];
@@ -98,7 +98,7 @@ void error_handling(char *err_string){
 
 void sendTcpQuery(char *domainName,int queryType){
     struct DNS_Header *header;
-    struct DNS_Query *query;
+    // struct DNS_Query *query;
     //initialization of header
     header=(struct DNS_Header*)&send_buff;
     header->length=htons(0);
@@ -125,7 +125,7 @@ void sendTcpQuery(char *domainName,int queryType){
 
     //strcpy(qname, domainName);//修改域名格式
     ChangetoDnsNameFormat(qname,(unsigned char*)domainName);
-    printf("qname:%s\n",qname);
+    // printf("qname:%s\n",qname);
     qinfo = (struct QUESTION*) &send_buff[sizeof(struct DNS_Header)
     + (strlen((const char*) qname) + 1)]; //qinfo指向问题查询区域的查询类型字段
 

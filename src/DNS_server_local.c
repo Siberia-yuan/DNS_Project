@@ -205,7 +205,7 @@ int sendUDPQuery(char *destIP,char *destPORT,char *domainName,int queryType){
 
 
     struct DNS_UDP_Header *header;
-    struct DNS_Query *query;
+    // struct DNS_Query *query;
     //initialization of header
     header=(struct DNS_UDP_Header*)&send_buff;
     header->id = (unsigned short) htons(getpid());//id设为进程标识符
