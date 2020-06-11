@@ -1,5 +1,7 @@
-// com+org_RR
-
+/**
+ * Top level domain DNS
+ * Author: Qincheng Gao
+*/
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>

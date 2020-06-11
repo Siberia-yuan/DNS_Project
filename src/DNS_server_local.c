@@ -1,3 +1,7 @@
+/**
+ * Local server processing query
+ * Author: Tengyuan He
+*/
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -10,10 +14,11 @@ int match(unsigned char *dest,unsigned char *ref);
 char* ChangetoURL(char* buf, char* dest);
 void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host);
 void error_handling(char* message);
-//int check_cache(int clnt_sock,unsigned char* hostName,int queryMethod);
 int sendUDPQuery(char *destIP,char *destPORT,char *domainName,int queryType);
 int defineLocal(char*target);
 
+
+//buffers for sending and receiving
 #define BUF_SIZE 65535
 char send_buff[BUF_SIZE];
 char recv_buff[BUF_SIZE];
@@ -70,18 +75,12 @@ int main(int argc,char *argv[]){
     printf("received:%s\n",dnsquery);
     char temp[65];
     ChangetoURL(dnsquery,temp);
-    // printf("temp!!!!!!!!!!!!!!!!!!:%s\n",temp);
-    // printf("received:%d\n",ntohs(que->qclass));
-    // printf("received:%d\n",ntohs(que->qtype));
-
-    // sendUDPQuery(rootDNSIP,rootPORT,(char*)dnsquery,ntohs(que->qtype));
+    
     sendUDPQuery(rootDNSIP,rootPORT,(char*)temp,ntohs(que->qtype));
     int recvMsgSize=0;
     int flag=1;
     while(1){
         char*DestDNS;
-        //char tempDestDNS[65];
-        //memcpy(write_buff,recv_buff,sizeof(recv_buff));
 
         if(flag!=1){
             recvMsgSize = sendUDPQuery(DestDNS,"53",(char*)temp,ntohs(que->qtype));
@@ -176,7 +175,6 @@ int match(unsigned char *dest,unsigned char *ref) {  // ref是文件里的，短
 
     for(int i=length-1;i>=0;i--){
         if(*(dest+i+length1)<64 && *(dest+i+length1)>0 && *(ref+i)=='.') {
-        // if(*(dest+i+length1)=='.' && *(ref+i)=='.') {
             continue;
         }else{
             if(*(dest+i+length1)!=*(ref+i)){
@@ -205,8 +203,6 @@ int sendUDPQuery(char *destIP,char *destPORT,char *domainName,int queryType){
 
 
     struct DNS_UDP_Header *header;
-    // struct DNS_Query *query;
-    //initialization of header
     header=(struct DNS_UDP_Header*)&send_buff;
     header->id = (unsigned short) htons(getpid());//id设为进程标识符
     header->qr = 0; //查询
@@ -228,9 +224,7 @@ int sendUDPQuery(char *destIP,char *destPORT,char *domainName,int queryType){
     unsigned char *qname;
     struct QUESTION *qinfo = NULL;
     qname = (unsigned char*) &send_buff[sizeof(struct DNS_UDP_Header)];
-    //strcpy(qname, domainName);//修改域名格式
     ChangetoDnsNameFormat(qname,(unsigned char*)domainName);
-    // printf("qname:%s\n",qname);
     qinfo = (struct QUESTION*) &send_buff[sizeof(struct DNS_UDP_Header)
     + (strlen((const char*) qname) + 1)]; //qinfo指向问题查询区域的查询类型字段
 

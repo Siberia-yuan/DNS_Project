@@ -1,5 +1,8 @@
-// root_RR
-
+/**
+ * root server processing UDP query for local server
+ * Author: Qincheng Gao
+ * Author: Tengyuan He
+*/
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
@@ -19,11 +22,10 @@ int defineLocal(char*target);
 char recv_buff[BUF_SIZE];
 char send_buff[BUF_SIZE];
 
-// char* filename = "../RR/testRR";
 char* filename = "../RR/root_RR";
 char* serverIP = "127.0.1.0";
 int PORT=53;
-int en_iter = 1;    // 查询RR文件时type可以不匹配
+int en_iter = 1; 
 
 int main(int argc, char *argv[]){
     int serv_sock, clnt_sock;
@@ -170,11 +172,10 @@ char* searchIP(char* domainName, int type, char* resultIP) {
 
     while (!feof(fp)) {
         fscanf(fp,"%s %d %s %s %s\n",&domain,&ttl,&class,&typeF,&resource);
-        // printf("str: %s\n",domain);
-        // printf("other:%d,%s,%s,%s\n",&ttl,&class,&typeF,&resource);
+
         if (match(domainName,domain) == 1) {
             int type1 = ChangeTypetoInt(typeF);
-            // printf("type:%d,%d\n",type,type1);
+
             if (type1 == type || en_iter==1) { // 找到对应RR条目 (type也相同)
                 strcpy(resultIP,resource);
                 break;

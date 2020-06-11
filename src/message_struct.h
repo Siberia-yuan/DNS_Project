@@ -1,3 +1,14 @@
+/**
+ * Header containg post struct information
+ * Author: Qincheng Gao
+ * 
+ * 
+ * DNS_RR:resource record
+ * DNS_Header:TCP header
+ * DNS_UDP_Header:UDP header
+ * QUESTION:DNS Query
+*/
+
 #ifndef _MESSAGE_STRUCT
 #define _MESSAGE_STRUCT
 

@@ -1,3 +1,8 @@
+/**
+ * Client for sending Query
+ * Author: Tengyuan He
+*/
+
 #include<stdio.h>
 #include<arpa/inet.h>
 #include<sys/socket.h>
@@ -9,11 +14,14 @@
 
 #define SENDPORT 53
 
-void error_handling(char *err_string);
-void sendTcpQuery(char *domainName,int queryType);
-void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host);
-char* ChangetoURL(char* buf, char* dest);
 
+void error_handling(char *err_string);//process error and exit
+void sendTcpQuery(char *domainName,int queryType);//send TCP query to local server
+void ChangetoDnsNameFormat(unsigned char* dns, unsigned char* host);//Change query url to DNS name format
+char* ChangetoURL(char* buf, char* dest);//Change DNS name format to url
+
+
+//buffers for sending and receiving
 char recv_buff[65535];
 char send_buff[65535];
 char send_buff1[65535];
@@ -98,7 +106,7 @@ void error_handling(char *err_string){
 
 void sendTcpQuery(char *domainName,int queryType){
     struct DNS_Header *header;
-    // struct DNS_Query *query;
+
     //initialization of header
     header=(struct DNS_Header*)&send_buff;
     header->length=htons(0);
@@ -134,10 +142,6 @@ void sendTcpQuery(char *domainName,int queryType){
     unsigned short len=sizeof(struct DNS_Header)+strlen((const char*) qname)+1+sizeof(struct QUESTION);
     header->length=htons(len);
 
-    // unsigned short tcp_len = htons(len);
-    // memcpy(send_buff1, &tcp_len, sizeof(unsigned short));
-    // memcpy(send_buff1+2, &send_buff, sizeof(recv_buff)-2);
-
     int sock;
     struct sockaddr_in dns_local;
     memset(&dns_local,0,sizeof(dns_local));
@@ -162,7 +166,6 @@ void sendTcpQuery(char *domainName,int queryType){
     int idx=0;
     if(read(sock,recv_buff,sizeof(recv_buff))==-1)
         error_handling("read() error");
-    // printf("received message from server:\n");
 
     close(sock);
     return;
